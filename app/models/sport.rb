@@ -4,4 +4,6 @@ class Sport < ApplicationRecord
 
   accepts_nested_attributes_for :events, allow_destroy: true
 
+  default_scope { order(:pos) }
+
 end

@@ -1,3 +1,7 @@
 Rails.application.routes.draw do
-  # For details on the DSL available within this file, see http://guides.rubyonrails.org/routing.html
+
+  get '/sports'                            => 'sports#index'
+  get '/sports/:sport_id'                  => 'sports#show_events'
+  get '/sports/:sport_id/events/:event_id' => 'events#show_outcomes'
+
 end
