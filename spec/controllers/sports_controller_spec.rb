@@ -7,6 +7,13 @@ RSpec.describe SportsController, type: :controller do
   let!(:event1) { Event.create(sport: sport1, desc: "Test event 1", comp_desc: 'Test event comp_desc 1', pos: 111 ) }
   let!(:event2) { Event.create(sport: sport1, desc: "Test event 2", comp_desc: 'Test event comp_desc 2', pos: 22 ) }
   let!(:event3) { Event.create(sport: sport2, desc: "Test event 3", comp_desc: 'Test event comp_desc 3', pos: 333 ) }
+  
+  around(:each) do |example|
+    orig_u_b_e_a = BasicDataProvider::UPDATE_BEFORE_EVERY_ACTION
+    BasicDataProvider::UPDATE_BEFORE_EVERY_ACTION = false
+    example.run
+    BasicDataProvider::UPDATE_BEFORE_EVERY_ACTION = orig_u_b_e_a
+  end
     
   describe "index" do
     it 'renders the sports' do

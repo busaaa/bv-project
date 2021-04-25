@@ -1,58 +1,63 @@
 class BasicDataProvider
 
   include Singleton
-  
+
+  UPDATE_BEFORE_EVERY_ACTION          = true
+  DESTROY_ALL_SPORTS_AND_ASSOCIATIONS = true
+  DESTROY_ALL_EVENTS_AND_ASSOCIATIONS = true
+
   def load_data
-    get_normalized_data.each do |sport_data|
-      Sport.create! sport_data
+    if DESTROY_ALL_SPORTS_AND_ASSOCIATIONS
+      Sport.destroy_all  
+    elsif DESTROY_ALL_EVENTS_AND_ASSOCIATIONS 
+      Event.destroy_all
     end
-  rescue => error
-    # TODO 
+    get_flat_data.each do |model, attributes_array|
+      attributes_array.each do |attributes_hash|
+        Object.const_get(model.capitalize).find_or_create_by(id: attributes_hash[:id]).update(attributes_hash[:attributes])
+      end
+    end
   end
 
-  # private 
+  private 
 
-  def get_normalized_data
-    url      = 'https://www.betvictor.com/bv_in_play/v2/en-gb/1/mini_inplay.json'
-    request  = RestClient::Request.new(method: :get, headers: { content_type: 'application/json'}, url: url)
-    response = JSON.parse(request.execute.body)
+  def get_response
+    url       = 'https://www.betvictor.com/bv_in_play/v2/en-gb/1/mini_inplay.json'
+    request   = RestClient::Request.new(method: :get, headers: { content_type: 'application/json'}, url: url)
+    JSON.parse(request.execute.body)
+  end
 
-    # sports = response['sports'].map do |sport|
-    #   events = sport['comp'].map do |comp|
-    #     comp['events'].map do |event|
-    #       markets = event['markets'].map do |market|
-    #         outcomes = market['o'].map do |outcome|
-    #           {
-    #             id:  outcome['oid'],
-    #             d:   outcome['d'],
-    #             fdp: outcome['fdp'],
-    #           }
-    #         end
+  def get_flat_data
+    response = get_response
+
+    response['sports'].each_with_object({sport: [], event: [], market: [], outcome: []}) do |sport_elem, models|
+      sport_elem['comp'].each do |comp_elem|
+        comp_elem['events'].each do |event_elem|
+          event_elem['markets'].each do |market_elem|
+            market_elem['o'].each do |outcome_elem|
+              models[:outcome] << {
+                                    id:         outcome_elem['oid'],
+                                    attributes: { market_id: market_elem['id'], d: outcome_elem['d'], fdp: outcome_elem['fdp'] }
+                                  }
+            end
             
-    #         {
-    #           id:                  market['id'],
-    #           desc:                market['desc'],
-    #           pt_desc:             market['ptdesc'],
-    #           outcomes_attributes: outcomes,
-    #         }
-    #       end
+            models[:market] << {
+                                 id:         market_elem['id'],
+                                 attributes: { event_id: event_elem['id'], desc: market_elem['desc'], pt_desc: market_elem['ptdesc'] }
+                               }
+          end
           
-    #       {
-    #         id:                 event['id'],
-    #         desc:               event['desc'],
-    #         comp_desc:          comp['desc'],
-    #         pos:                event['pos'],
-    #         markets_attributes: markets,
-    #       }
-    #     end
-    #   end.flatten
+          models[:event] << {
+                              id:         event_elem['id'],
+                              attributes: { sport_id: sport_elem['id'], desc: event_elem['desc'], comp_desc: comp_elem['desc'], pos: event_elem['pos'] }
+                            }
+        end
+      end
 
-    #   {
-    #     id:                sport['id'],
-    #     desc:              sport['desc'],
-    #     pos:               sport['pos'],
-    #     events_attributes: events,
-    #   }
-    # end
+      models[:sport] << {
+                          id:         sport_elem['id'],
+                          attributes: { desc: sport_elem['desc'], pos: sport_elem['pos'] }
+                        }
+    end
   end
 end
