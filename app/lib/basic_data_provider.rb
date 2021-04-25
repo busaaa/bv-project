@@ -2,9 +2,9 @@ class BasicDataProvider
 
   include Singleton
 
-  UPDATE_BEFORE_EVERY_ACTION          = true
-  DESTROY_ALL_SPORTS_AND_ASSOCIATIONS = true
-  DESTROY_ALL_EVENTS_AND_ASSOCIATIONS = true
+  UPDATE_BEFORE_EVERY_ACTION          = false
+  DESTROY_ALL_SPORTS_AND_ASSOCIATIONS = false 
+  DESTROY_ALL_EVENTS_AND_ASSOCIATIONS = false
 
   def load_data
     if DESTROY_ALL_SPORTS_AND_ASSOCIATIONS
@@ -14,6 +14,7 @@ class BasicDataProvider
     end
     get_flat_data.each do |model, attributes_array|
       attributes_array.each do |attributes_hash|
+        # creating Sport, Event, Market, Outcome records
         Object.const_get(model.capitalize).find_or_create_by(id: attributes_hash[:id]).update(attributes_hash[:attributes])
       end
     end
